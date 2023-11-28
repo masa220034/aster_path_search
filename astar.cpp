@@ -2,6 +2,115 @@
 
 #include <iostream>
 #include <vector>
+#include <queue>
+#include <cmath>
+#include <algorithm>
+
+using namespace std;
+
+// グリッドのセルを表す構造体
+struct Cell {
+    int row, col;
+    int f, g, h; // f = g + h
+    Cell* parent;
+
+    Cell(int r, int c, int gCost, int hCost, Cell* p = nullptr)
+        : row(r), col(c), g(gCost), h(hCost), parent(p) {
+        f = g + h;
+    }
+};
+
+// グリッドのサイズ
+const int ROW = 5;
+const int COL = 5;
+
+// グリッドの移動方向（上下左右および斜め）
+const int dr[] = { -1, 1, 0, 0, -1, -1, 1, 1 };
+const int dc[] = { 0, 0, -1, 1, -1, 1, -1, 1 };
+
+// ヒューリスティック関数（マンハッタン距離）
+int heuristic(int r, int c, int goalR, int goalC) {
+    return abs(goalR - r) + abs(goalC - c);
+}
+
+// A*アルゴリズム
+void aStar(int grid[ROW][COL], int startR, int startC, int goalR, int goalC) {
+    // OpenリストとClosedリストを初期化
+    vector<vector<bool>> closed(ROW, vector<bool>(COL, false));
+    auto compare = [](Cell* a, Cell* b) { return a->f > b->f; };
+    priority_queue<Cell*, vector<Cell*>, decltype(compare)> open(compare);
+
+    // スタートセルを作成してOpenリストに追加
+    Cell* start = new Cell(startR, startC, 0, heuristic(startR, startC, goalR, goalC));
+    open.push(start);
+
+    while (!open.empty()) {
+        // Openリストから最小のf値を持つセルを取得
+        Cell* current = open.top();
+        open.pop();
+
+        int r = current->row;
+        int c = current->col;
+
+        // ゴールに到達したら経路を出力して終了
+        if (r == goalR && c == goalC) {
+            vector<pair<int, int>> path;
+            while (current != nullptr) {
+                path.push_back({ current->row, current->col });
+                current = current->parent;
+            }
+            reverse(path.begin(), path.end());
+
+            cout << "Found Path: ";
+            for (const auto& p : path) {
+                cout << "(" << p.first << "," << p.second << ") ";
+            }
+            cout << endl;
+            return;
+        }
+
+        closed[r][c] = true;
+
+        // グリッド上の隣接セルを探索
+        for (int i = 0; i < 8; ++i) {
+            int nr = r + dr[i];
+            int nc = c + dc[i];
+
+            // グリッド範囲内かつ障害物でない場合
+            if (nr >= 0 && nr < ROW && nc >= 0 && nc < COL && grid[nr][nc] == 0 && !closed[nr][nc]) {
+                int gNew = current->g + 1;
+                int hNew = heuristic(nr, nc, goalR, goalC);
+                int fNew = gNew + hNew;
+
+                // 新しいセルを作成してOpenリストに追加
+                Cell* successor = new Cell(nr, nc, gNew, hNew, current);
+                open.push(successor);
+            }
+        }
+    }
+
+    cout << "Path not found!" << endl;
+}
+
+int main() {
+    int grid[ROW][COL] = {
+        {0, 1, 0, 0, 0},
+        {0, 1, 0, 1, 0},
+        {0, 0, 0, 0, 0},
+        {0, 1, 1, 1, 0},
+        {0, 0, 0, 0, 0}
+    };
+
+    int startR = 0, startC = 0;
+    int goalR = 4, goalC = 4;
+
+    aStar(grid, startR, startC, goalR, goalC);
+
+    return 0;
+}
+
+/*#include <iostream>
+#include <vector>
 #include <cmath>
 
 struct Node {
@@ -125,4 +234,4 @@ void example() {
 int main() {
     example();
     return 0;
-}
+}*/
